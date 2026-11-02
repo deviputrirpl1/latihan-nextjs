@@ -70,6 +70,16 @@ export const events: Event[] = [
     kuota: 60,
     terisi: 18
   },
+  {
+    id: 7,
+    judul: "Festival Musik",
+    kategori: "Musik",
+    tanggal: "2026-12-20",
+    lokasi: "Malang",
+    harga: 50000,
+    kuota: 100,
+    terisi: 20
+}
 ];
 
 export function rupiah(n: number) {
