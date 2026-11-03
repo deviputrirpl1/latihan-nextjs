@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Penyimpanan = {
   getItem: (key: string) => string | null;
@@ -9,21 +8,19 @@ type Penyimpanan = {
 };
 
 export default function TombolFavorit({ id }: { id: number }) {
-  const [favorit, setFavorit] = useState(false);
-
   function ambilPenyimpanan() {
     return (globalThis as unknown as {
       localStorage: Penyimpanan;
     }).localStorage;
   }
 
-  useEffect(() => {
+  // Mengisi nilai awal state langsung dari localStorage saat komponen dimuat
+  const [favorit, setFavorit] = useState(() => {
     const simpan: number[] = JSON.parse(
       ambilPenyimpanan().getItem("favorit") ?? "[]"
     );
-
-    setFavorit(simpan.includes(id));
-  }, [id]);
+    return simpan.includes(id);
+  });
 
   function ubah() {
     const storage = ambilPenyimpanan();
