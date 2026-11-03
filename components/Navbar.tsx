@@ -3,9 +3,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const menu = [
-{ href: "/", teks: "Beranda" },
-{ href: "/event", teks: "Event" },
-{ href: "/tentang", teks: "Tentang" },
+  { href: "/", teks: "Beranda" },
+  { href: "/event", teks: "Event" },
+  { href: "/favorit", teks: "Favorit" }, // <-- Menu baru yang ditambahkan
+  { href: "/tentang", teks: "Tentang" },
 ];
 
 export default function Navbar() {
