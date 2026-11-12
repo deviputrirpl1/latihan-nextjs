@@ -1,100 +1,98 @@
-
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { events, rupiah } from "@/data/events";
 import FormPesan from "@/components/FormPesan";
+import Link from "next/link";
+import { cookies } from "next/headers";
 import TombolFavorit from "@/components/TombolFavorit";
 
-export default async function Detail({
-  params,
-}: PageProps<"/event/[id]">) {
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function HalamanDetailEvent({ params }: Props) {
   const { id } = await params;
   const event = events.find((e) => e.id === Number(id));
 
-  if (!event) notFound();
+  if (!event) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-bold">Event tidak ditemukan</h1>
+        <Link href="/event" className="text-blue-600 underline">Kembali ke katalog</Link>
+      </div>
+    );
+  }
 
   const sisa = event.kuota - event.terisi;
+  const namaAwal = (await cookies()).get("nama")?.value ?? "";
 
-  const eventTerkait = events.filter(
-    (e) => e.kategori === event.kategori && e.id !== event.id
-  );
+  // Mencari event terkait (event lain dengan kategori yang sama atau selain event ini)
+  const eventTerkait = events.filter((e) => e.id !== event.id).slice(0, 1);
 
   return (
-    <article className="rounded-xl border bg-white p-6">
-      <Link
-        href="/event"
-        className="mb-4 inline-block text-sm text-blue-600 underline"
-      >
-        ← Kembali ke katalog
-      </Link>
+    <div className="mx-auto max-w-4xl p-6">
+      <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        {/* Tombol Kembali ke Katalog */}
+        <Link href="/event" className="text-sm text-blue-600 underline">
+          ← Kembali ke katalog
+        </Link>
 
-      <span className="block w-max rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-        {event.kategori}
-      </span>
+        {/* Kategori */}
+        <div className="mt-3">
+          <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+            {event.kategori}
+          </span>
+        </div>
 
-      <h1 className="mt-2 text-3xl font-bold">
-        {event.judul}
-      </h1>
+        {/* Judul & Detail Utama */}
+        <h1 className="mt-1 text-2xl font-bold text-slate-900">{event.judul}</h1>
+        <p className="text-sm text-slate-500">
+          {event.tanggal} · {event.lokasi}
+        </p>
 
-      <p className="mt-1 text-slate-500">
-        {event.tanggal} · {event.lokasi}
-      </p>
-
-      <p className="mt-4 text-xl font-semibold">
-        {rupiah(event.harga)}
-      </p>
-
-      <p className="text-slate-600">
-        Sisa {sisa} dari {event.kuota} tiket
-      </p>
-
-      <TombolFavorit id={event.id} />
-
-      <FormPesan event={event} />
-
-      <section className="mt-8 border-t pt-6">
-        <h2 className="mb-4 text-xl font-bold">
-          Event Terkait
-        </h2>
-
-        {eventTerkait.length === 0 ? (
-          <p className="text-slate-500">
-            Belum ada event terkait.
+        {/* Harga & Sisa Tiket */}
+        <div className="mt-3">
+          <p className="text-xl font-bold text-blue-600">
+            {event.harga === 0 ? "Gratis" : rupiah(event.harga)}
           </p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {eventTerkait.map((e) => (
-              <div
-                key={e.id}
-                className="rounded-lg border p-4"
+          <p className="text-sm text-slate-600">
+            Sisa {sisa} dari {event.kuota} tiket
+          </p>
+        </div>
+
+        {/* Tombol Favorit */}
+        <div className="mt-3">
+          <TombolFavorit id={event.id} />
+        </div>
+
+        {/* Garis Pembatas */}
+        <hr className="my-5 border-slate-200" />
+
+        {/* Form Pemesanan */}
+        <div>
+          <h2 className="mb-3 font-bold text-slate-800">Pesan tiket</h2>
+          <FormPesan event={event} namaAwal={namaAwal} />
+        </div>
+
+        {/* Garis Pembatas */}
+        <hr className="my-5 border-slate-200" />
+
+        {/* Bagian Event Terkait */}
+        <div>
+          <h3 className="mb-2 font-bold text-slate-800">Event terkait</h3>
+          {eventTerkait.length > 0 ? (
+            eventTerkait.map((terkait) => (
+              <Link
+                key={terkait.id}
+                href={`/event/${terkait.id}`}
+                className="text-sm text-blue-600 underline block"
               >
-                <span className="rounded bg-blue-100 px-2 py-1 text-xs text-blue-700">
-                  {e.kategori}
-                </span>
-
-                <h3 className="mt-2 font-semibold">
-                  {e.judul}
-                </h3>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  {e.tanggal} · {e.lokasi}
-                </p>
-
-                <p className="mt-2 font-medium">
-                  {rupiah(e.harga)}
-                </p>
-
-                <Link
-                  href={`/event/${e.id}`}
-                  className="mt-3 inline-block rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
-                >
-                  Lihat detail
-                </Link>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </article>
+                {terkait.judul}
+              </Link>
+            ))
+          ) : (
+            <p className="text-sm text-slate-400">Tidak ada event terkait.</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

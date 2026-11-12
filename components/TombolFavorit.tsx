@@ -1,66 +1,36 @@
 "use client";
-
 import { useState, useEffect } from "react";
 
-type Penyimpanan = {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-};
-
 export default function TombolFavorit({ id }: { id: number }) {
-  const [mounted, setMounted] = useState(false);
-  const [favorit, setFavorit] = useState(false);
-
-  function ambilPenyimpanan(): Penyimpanan {
-    const globalObj = globalThis as unknown as {
-      localStorage?: Penyimpanan;
-    };
-    if (globalObj.localStorage) {
-      return globalObj.localStorage;
-    }
-    return {
-      getItem: () => null,
-      setItem: () => {},
-    };
-  }
+  const [isFavorit, setIsFavorit] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    const storage = ambilPenyimpanan();
-    const data = storage.getItem("favorit") ?? "[]";
-    const simpan: number[] = JSON.parse(data);
-    setFavorit(simpan.includes(id));
+    // @ts-ignore
+    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
+    setIsFavorit(favs.includes(id));
   }, [id]);
 
-  function ubah() {
-    const storage = ambilPenyimpanan();
-    const simpan: number[] = JSON.parse(
-      storage.getItem("favorit") ?? "[]"
-    );
-
-    const baru = simpan.includes(id)
-      ? simpan.filter((x) => x !== id)
-      : [...simpan, id];
-
-    storage.setItem("favorit", JSON.stringify(baru));
-    setFavorit(baru.includes(id));
-  }
-
-  // Sebelum dimount di client, jangan render status favorit yang berbeda untuk mencegah hydration mismatch
-  if (!mounted) {
-    return (
-      <button className="mt-3 rounded border px-3 py-1.5 text-sm">
-        ♡ Tambah favorit
-      </button>
-    );
-  }
+  const toggleFavorit = () => {
+    // @ts-ignore
+    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
+    let updated;
+    if (isFavorit) {
+      updated = favs.filter((item: number) => item !== id);
+    } else {
+      updated = [...favs, id];
+    }
+    // @ts-ignore
+    localStorage.setItem("favorit", JSON.stringify(updated));
+    setIsFavorit(!isFavorit);
+  };
 
   return (
     <button
-      onClick={ubah}
-      className="mt-3 rounded border px-3 py-1.5 text-sm"
+      onClick={toggleFavorit}
+      className="flex items-center gap-2 rounded-lg border bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
     >
-      {favorit ? "♥ Favorit" : "♡ Tambah favorit"}
+      <span>{isFavorit ? "❤️" : "🤍"}</span>
+      <span>{isFavorit ? "Disukai" : "Tambah favorit"}</span>
     </button>
   );
 }
