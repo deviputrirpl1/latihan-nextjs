@@ -1,10 +1,17 @@
-
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
+const poppins = localFont({
+  src: [
+    { path: "./font/Poppins-Regular.ttf", weight: "400" },
+    { path: "./font/Poppins-Bold.ttf", weight: "700" },
+  ],
+});
+
 export const metadata: Metadata = {
-  title: "EventKu",
+  title: { default: "EventKu", template: "%s · EventKu" },
   description: "Katalog dan pemesanan tiket event sekolah",
 };
 
@@ -15,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" className="antialiased">
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+      <body className={`${poppins.className} min-h-screen flex flex-col bg-slate-50 text-slate-800`}>
         <Navbar />
         <main className="mx-auto w-full max-w-5xl flex-1 p-6">
           {children}

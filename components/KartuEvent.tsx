@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { Event, rupiah } from "@/data/events";
 import { useState, useEffect } from "react";
 
@@ -30,6 +31,14 @@ export default function KartuEvent({ event }: { event: Event }) {
 
   return (
     <div className="rounded-xl border bg-white p-5 shadow-sm relative">
+      <Image
+        src={event.gambar ?? "/img/default.png"}
+        alt={event.judul}
+        width={400}
+        height={210}
+        className="mb-3 rounded-lg"
+      />
+
       <button
         onClick={toggleFavorit}
         className="absolute top-4 right-4 text-xl"
