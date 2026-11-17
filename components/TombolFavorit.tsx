@@ -1,36 +1,45 @@
 "use client";
-import { useState, useEffect } from "react";
 
-export default function TombolFavorit({ id }: { id: number }) {
-  const [isFavorit, setIsFavorit] = useState(false);
+import { useState } from "react";
 
-  useEffect(() => {
-    // @ts-ignore
-    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
-    setIsFavorit(favs.includes(id));
-  }, [id]);
+export default function TombolFavorit({ id }: { id: string | number }) {
+  const [isFavorit, setIsFavorit] = useState(() => {
+    try {
+      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null } };
+      if (!win.localStorage) return false;
+      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
+      return favs.includes(id);
+    } catch {
+      return false;
+    }
+  });
 
   const toggleFavorit = () => {
-    // @ts-ignore
-    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
-    let updated;
-    if (isFavorit) {
-      updated = favs.filter((item: number) => item !== id);
-    } else {
-      updated = [...favs, id];
+    try {
+      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null; setItem: (key: string, value: string) => void } };
+      if (!win.localStorage) return;
+      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
+      let updated;
+      if (favs.includes(id)) {
+        updated = favs.filter((item: string | number) => item !== id);
+      } else {
+        updated = [...favs, id];
+      }
+      win.localStorage.setItem("favorit", JSON.stringify(updated));
+      setIsFavorit(!isFavorit);
+    } catch (e) {
+      console.error(e);
     }
-    // @ts-ignore
-    localStorage.setItem("favorit", JSON.stringify(updated));
-    setIsFavorit(!isFavorit);
   };
 
   return (
     <button
       onClick={toggleFavorit}
-      className="flex items-center gap-2 rounded-lg border bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+      className={`px-4 py-2 rounded text-white font-semibold ${
+        isFavorit ? "bg-red-500 hover:bg-red-600" : "bg-gray-400 hover:bg-gray-500"
+      }`}
     >
-      <span>{isFavorit ? "❤️" : "🤍"}</span>
-      <span>{isFavorit ? "Disukai" : "Tambah favorit"}</span>
+      {isFavorit ? "♥ Favorit" : "♡ Tambah ke Favorit"}
     </button>
   );
 }

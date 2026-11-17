@@ -1,75 +1,74 @@
 "use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Event, rupiah } from "@/data/events";
-import { useState, useEffect } from "react";
+import type { Event } from "@/data/events";
+import { rupiah } from "@/data/events";
 
 export default function KartuEvent({ event }: { event: Event }) {
-  const [isFavorit, setIsFavorit] = useState(false);
-
-  useEffect(() => {
-    // @ts-ignore
-    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
-    setIsFavorit(favs.includes(event.id));
-  }, [event.id]);
+  const [isFavorit, setIsFavorit] = useState(() => {
+    try {
+      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null } };
+      if (!win.localStorage) return false;
+      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
+      return favs.includes(event.id);
+    } catch {
+      return false;
+    }
+  });
 
   const toggleFavorit = () => {
-    // @ts-ignore
-    const favs = JSON.parse(localStorage.getItem("favorit") || "[]");
-    let updated;
-    if (isFavorit) {
-      updated = favs.filter((id: number) => id !== event.id);
-    } else {
-      updated = [...favs, event.id];
+    try {
+      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null; setItem: (key: string, value: string) => void } };
+      if (!win.localStorage) return;
+      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
+      let updated;
+      if (favs.includes(event.id)) {
+        updated = favs.filter((id: string | number) => id !== event.id);
+      } else {
+        updated = [...favs, event.id];
+      }
+      win.localStorage.setItem("favorit", JSON.stringify(updated));
+      setIsFavorit(!isFavorit);
+    } catch (e) {
+      console.error(e);
     }
-    // @ts-ignore
-    localStorage.setItem("favorit", JSON.stringify(updated));
-    setIsFavorit(!isFavorit);
   };
 
-  const sisa = event.kuota - event.terisi;
+  const sisaTiket = event.kuota - event.terisi;
 
   return (
-    <div className="rounded-xl border bg-white p-5 shadow-sm relative">
-      <Image
-        src={event.gambar ?? "/img/default.png"}
-        alt={event.judul}
-        width={400}
-        height={210}
-        className="mb-3 rounded-lg"
-      />
-
-      <button
-        onClick={toggleFavorit}
-        className="absolute top-4 right-4 text-xl"
-        title="Favorit"
-      >
-        {isFavorit ? "❤️" : "🤍"}
-      </button>
-
-      <div className="flex gap-2">
-        <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
-          {event.kategori}
-        </span>
+    <div className="border rounded-lg p-4 bg-white shadow-sm flex flex-col justify-between">
+      <div>
+        <div className="flex justify-between items-start mb-2">
+          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+            {event.kategori}
+          </span>
+          <button
+            onClick={toggleFavorit}
+            className={`text-xl ${isFavorit ? "text-red-500" : "text-gray-300"}`}
+          >
+            ♥
+          </button>
+        </div>
+        <h2 className="text-lg font-bold mb-1">
+          <Link href={`/event/${event.id}`} className="hover:underline text-blue-600">
+            {event.judul}
+          </Link>
+        </h2>
+        <p className="text-sm text-gray-600 mb-2">{event.tanggal}</p>
+        <p className="text-sm font-semibold mb-4">{rupiah(event.harga)}</p>
       </div>
 
-      <h2 className="mt-2 text-lg font-bold text-slate-800">{event.judul}</h2>
-      <p className="text-sm text-slate-500">{event.tanggal} · {event.lokasi}</p>
-
-      <div className="mt-4 flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-blue-600">
-            {event.harga === 0 ? "Gratis" : rupiah(event.harga)}
-          </p>
-          <p className={`text-xs ${sisa === 0 ? "text-red-600 font-semibold" : "text-slate-500"}`}>
-            {sisa === 0 ? "Tiket habis" : `Sisa ${sisa} tiket`}
-          </p>
-        </div>
+      <div className="flex justify-between items-center text-sm">
+        <span className={sisaTiket > 0 ? "text-green-600" : "text-red-600 font-semibold"}>
+          {sisaTiket > 0 ? `Sisa tiket: ${sisaTiket}` : "Habis"}
+        </span>
         <Link
           href={`/event/${event.id}`}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
         >
-          Lihat detail
+          Detail
         </Link>
       </div>
     </div>
