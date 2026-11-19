@@ -9,6 +9,7 @@ export type Saringan = {
   sisa: boolean;
   max: number | null;
   hal: number;
+  semua: boolean;
 };
 
 type IsiURL = { [kunci: string]: string | string[] | undefined };
@@ -28,6 +29,7 @@ export function bacaSaringan(isi: IsiURL): Saringan {
     sisa: teks("sisa") === "1",
     max: teks("max") !== "" && max >= 0 ? max : null,
     hal: Number.isInteger(hal) && hal >= 1 ? hal : 1,
+    semua: teks("semua") === "1",
   };
 }
 
@@ -48,14 +50,18 @@ export function saringEvents(events: Event[], s: Saringan) {
 }
 
 // Alamat katalog untuk halaman tertentu, tanpa kehilangan saringan yang sedang dipakai.
-export function alamatHalaman(s: Saringan, hal: number) {
+export function alamatHalaman(s: Saringan, hal: number, tampilkanSemua = false) {
   const q = new URLSearchParams();
   if (s.cari) q.set("cari", s.cari);
   if (s.kategori !== "Semua") q.set("kategori", s.kategori);
   if (s.urut !== "tanggal") q.set("urut", s.urut);
   if (s.sisa) q.set("sisa", "1");
   if (s.max !== null) q.set("max", String(s.max));
-  if (hal > 1) q.set("hal", String(hal));
+  if (tampilkanSemua) {
+    q.set("semua", "1");
+  } else if (hal > 1) {
+    q.set("hal", String(hal));
+  }
   const teks = q.toString();
   return teks ? `/event?${teks}` : "/event";
 }

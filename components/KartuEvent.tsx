@@ -1,74 +1,102 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Event } from "@/data/events";
-import { rupiah } from "@/data/events";
 
-export default function KartuEvent({ event }: { event: Event }) {
-  const [isFavorit, setIsFavorit] = useState(() => {
-    try {
-      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null } };
-      if (!win.localStorage) return false;
-      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
-      return favs.includes(event.id);
-    } catch {
-      return false;
-    }
-  });
+interface KartuEventProps {
+  event: Event;
+}
 
-  const toggleFavorit = () => {
+type StorageLike = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+};
+
+function getStorage(): StorageLike | null {
+  const g = globalThis as typeof globalThis & { localStorage?: StorageLike };
+  return g.localStorage ?? null;
+}
+
+export default function KartuEvent({ event }: KartuEventProps) {
+  const [isFavorit, setIsFavorit] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const storage = getStorage();
+    if (!storage) return;
+
     try {
-      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null; setItem: (key: string, value: string) => void } };
-      if (!win.localStorage) return;
-      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
-      let updated;
-      if (favs.includes(event.id)) {
-        updated = favs.filter((id: string | number) => id !== event.id);
-      } else {
-        updated = [...favs, event.id];
+      const raw = storage.getItem("favorit_events");
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        setIsFavorit(parsed.includes(event.id));
       }
-      win.localStorage.setItem("favorit", JSON.stringify(updated));
-      setIsFavorit(!isFavorit);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setIsFavorit(false);
     }
-  };
+  }, [event.id]);
 
-  const sisaTiket = event.kuota - event.terisi;
+  function toggleFavorit() {
+    const storage = getStorage();
+    if (!storage) {
+      setIsFavorit((prev) => !prev);
+      return;
+    }
+
+    try {
+      const raw = storage.getItem("favorit_events");
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      const list: number[] = Array.isArray(parsed)
+        ? parsed.filter((item): item is number => typeof item === "number")
+        : [];
+
+      const nextList = list.includes(event.id)
+        ? list.filter((id) => id !== event.id)
+        : [...list, event.id];
+
+      storage.setItem("favorit_events", JSON.stringify(nextList));
+      setIsFavorit(nextList.includes(event.id));
+    } catch {
+      setIsFavorit((prev) => !prev);
+    }
+  }
+
+  const aktif = mounted && isFavorit;
 
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm flex flex-col justify-between">
-      <div>
-        <div className="flex justify-between items-start mb-2">
-          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-            {event.kategori}
-          </span>
-          <button
-            onClick={toggleFavorit}
-            className={`text-xl ${isFavorit ? "text-red-500" : "text-gray-300"}`}
-          >
-            ♥
-          </button>
-        </div>
-        <h2 className="text-lg font-bold mb-1">
-          <Link href={`/event/${event.id}`} className="hover:underline text-blue-600">
-            {event.judul}
-          </Link>
-        </h2>
-        <p className="text-sm text-gray-600 mb-2">{event.tanggal}</p>
-        <p className="text-sm font-semibold mb-4">{rupiah(event.harga)}</p>
+    <div className="rounded-lg border p-4 shadow-sm">
+      {event.gambar ? (
+        <img
+          src={event.gambar}
+          alt={event.judul}
+          className="mb-3 h-40 w-full rounded object-cover"
+        />
+      ) : null}
+
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">{event.kategori}</span>
+        <button
+          type="button"
+          onClick={toggleFavorit}
+          className={`text-xl ${aktif ? "text-red-500" : "text-gray-300"}`}
+          aria-label="Toggle favorit"
+        >
+          ♥
+        </button>
       </div>
 
-      <div className="flex justify-between items-center text-sm">
-        <span className={sisaTiket > 0 ? "text-green-600" : "text-red-600 font-semibold"}>
-          {sisaTiket > 0 ? `Sisa tiket: ${sisaTiket}` : "Habis"}
-        </span>
+      <h2 className="text-lg font-bold">{event.judul}</h2>
+      <p className="text-sm text-gray-600">{event.tanggal}</p>
+      <p className="mt-1 text-sm">{event.lokasi}</p>
+
+      <div className="mt-4">
         <Link
           href={`/event/${event.id}`}
-          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
+          className="inline-block rounded bg-red-600 px-3 py-1.5 text-sm text-white"
         >
-          Detail
+          Lihat Detail
         </Link>
       </div>
     </div>

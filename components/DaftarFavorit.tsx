@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -40,8 +39,12 @@ export default function DaftarFavorit() {
           }
         ).localStorage;
 
-        const stored = penyimpanan?.getItem("favorit");
-        const localIds = JSON.parse(stored ?? "[]") as number[];
+        const stored =
+          penyimpanan?.getItem("favorit_events") ?? penyimpanan?.getItem("favorit");
+        const parsed: unknown = stored ? JSON.parse(stored) : [];
+        const localIds: number[] = Array.isArray(parsed)
+          ? parsed.filter((item): item is number => typeof item === "number")
+          : [];
 
         setIds(localIds);
       } catch (error) {

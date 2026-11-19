@@ -1,45 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { Event } from "@/data/events";
 
-export default function TombolFavorit({ id }: { id: string | number }) {
-  const [isFavorit, setIsFavorit] = useState(() => {
-    try {
-      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null } };
-      if (!win.localStorage) return false;
-      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
-      return favs.includes(id);
-    } catch {
-      return false;
+interface TombolFavoritProps {
+  event?: Event;
+}
+
+type StorageLike = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+};
+
+function getStorage(): StorageLike | null {
+  const g = globalThis as typeof globalThis & { localStorage?: StorageLike };
+  return g.localStorage ?? null;
+}
+
+export default function TombolFavorit({ event }: TombolFavoritProps) {
+  const [isFavorit, setIsFavorit] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  const eventId = event?.id;
+
+  useEffect(() => {
+    setMounted(true);
+    if (eventId === undefined) {
+      setIsFavorit(false);
+      return;
     }
-  });
 
-  const toggleFavorit = () => {
+    const storage = getStorage();
+    if (!storage) return;
+
     try {
-      const win = (globalThis as unknown) as { localStorage?: { getItem: (key: string) => string | null; setItem: (key: string, value: string) => void } };
-      if (!win.localStorage) return;
-      const favs = JSON.parse(win.localStorage.getItem("favorit") || "[]");
-      let updated;
-      if (favs.includes(id)) {
-        updated = favs.filter((item: string | number) => item !== id);
-      } else {
-        updated = [...favs, id];
+      const raw = storage.getItem("favorit_events");
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        setIsFavorit(parsed.includes(eventId));
       }
-      win.localStorage.setItem("favorit", JSON.stringify(updated));
-      setIsFavorit(!isFavorit);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setIsFavorit(false);
     }
-  };
+  }, [eventId]);
+
+  function toggleFavorit() {
+    if (eventId === undefined) return;
+
+    const storage = getStorage();
+    if (!storage) {
+      setIsFavorit((prev) => !prev);
+      return;
+    }
+
+    try {
+      const raw = storage.getItem("favorit_events");
+      const parsed: unknown = raw ? JSON.parse(raw) : [];
+      const list: number[] = Array.isArray(parsed)
+        ? parsed.filter((item): item is number => typeof item === "number")
+        : [];
+
+      const nextList = list.includes(eventId)
+        ? list.filter((id) => id !== eventId)
+        : [...list, eventId];
+
+      storage.setItem("favorit_events", JSON.stringify(nextList));
+      setIsFavorit(nextList.includes(eventId));
+    } catch {
+      setIsFavorit((prev) => !prev);
+    }
+  }
+
+  if (!event) {
+    return null;
+  }
+
+  const aktif = mounted && isFavorit;
 
   return (
     <button
+      type="button"
       onClick={toggleFavorit}
-      className={`px-4 py-2 rounded text-white font-semibold ${
-        isFavorit ? "bg-red-500 hover:bg-red-600" : "bg-gray-400 hover:bg-gray-500"
+      aria-label="Toggle favorit"
+      className={`mt-3 mb-4 inline-flex items-center gap-2 rounded border px-3 py-1.5 text-sm font-medium ${
+        aktif
+          ? "border-red-500 text-red-600"
+          : "border-slate-300 text-slate-600"
       }`}
     >
-      {isFavorit ? "♥ Favorit" : "♡ Tambah ke Favorit"}
+      <span className={aktif ? "text-red-500" : "text-gray-400"}>♥</span>
+      <span>{aktif ? "Tersimpan di Favorit" : "Simpan ke Favorit"}</span>
     </button>
   );
 }

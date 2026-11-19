@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import Image from "next/image";
@@ -32,6 +33,15 @@ export default async function Detail({ params }: PageProps) {
   const namaAwal = (await cookies()).get("nama")?.value ?? "";
   return (
     <article className="rounded-xl border bg-white p-6">
+      <div className="mb-4">
+        <Link
+          href="/event"
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"
+        >
+          ← Kembali
+        </Link>
+      </div>
+
       <div className="relative mb-4 aspect-[40/21] w-full">
         <Image
           src={event.gambar ?? "/img/default.png"}
@@ -52,7 +62,7 @@ export default async function Detail({ params }: PageProps) {
       </p>
       <p className="mt-4 text-xl font-semibold">{rupiah(event.harga)}</p>
       <p className="text-slate-600">Sisa {sisa} dari {event.kuota} tiket</p>
-      <TombolFavorit id={event.id} />
+      <TombolFavorit event={event} />
       <FormPesan event={event} namaAwal={namaAwal} />
       <section className="mt-6">
         <h2 className="font-semibold">Event terkait</h2>

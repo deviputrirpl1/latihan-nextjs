@@ -1,7 +1,8 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { ambilEvents } from "@/data/ambil";
 import { rupiah } from "@/data/events";
-import { PER_HALAMAN, bacaSaringan, saringEvents } from "@/data/saringan";
+import { PER_HALAMAN, alamatHalaman, bacaSaringan, saringEvents } from "@/data/saringan";
 import KontrolKatalog from "@/components/KontrolKatalog";
 import KartuEvent from "@/components/KartuEvent";
 
@@ -14,7 +15,9 @@ export default async function Katalog({ searchParams }: PageProps<"/event">) {
 
   const jumlahHalaman = Math.max(1, Math.ceil(tersusun.length / PER_HALAMAN));
   const hal = Math.min(s.hal, jumlahHalaman);
-  const terlihat = tersusun.slice((hal - 1) * PER_HALAMAN, hal * PER_HALAMAN);
+  const terlihat = s.semua
+    ? tersusun
+    : tersusun.slice((hal - 1) * PER_HALAMAN, hal * PER_HALAMAN);
 
   const daftarKategori = ["Semua", ...new Set(events.map((e) => e.kategori))];
   const totalSisa = tersusun.reduce((t, e) => t + (e.kuota - e.terisi), 0);
@@ -33,10 +36,21 @@ export default async function Katalog({ searchParams }: PageProps<"/event">) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-       {terlihat.map((event) => (
+        {terlihat.map((event) => (
           <KartuEvent key={event.id} event={event} />
         ))}
       </div>
+
+      {!s.semua && tersusun.length > terlihat.length && (
+        <div className="mt-6 flex justify-center">
+          <Link
+            href={alamatHalaman(s, 1, true)}
+            className="rounded border px-4 py-2 text-sm font-medium hover:bg-gray-50"
+          >
+            Tampilkan semua
+          </Link>
+        </div>
+      )}
     </main>
   );
 }
