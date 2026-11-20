@@ -1,80 +1,42 @@
 import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { Event } from "@/data/events";
-import { events as localEvents } from "@/data/events";
 
 export async function ambilEvents(): Promise<Event[]> {
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .order("tanggal");
-
-    if (error || !data || data.length === 0) {
-      return localEvents;
-    }
-
-    return data as Event[];
-  } catch {
-    return localEvents;
-  }
+  const { data, error } = await supabase.from("events").select("*").order("tanggal");
+  if (error) throw new Error("Gagal memuat event: " + error.message);
+  return data as Event[];
 }
 
-export async function ambilEvent(
-  id: string | number
-): Promise<Event | undefined> {
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (!error && data) {
-      return data as Event;
-    }
-  } catch {
-    // fallback ke data lokal di bawah
-  }
-
-  return localEvents.find((item) => String(item.id) === String(id));
+export async function ambilEvent(id: number): Promise<Event | null> {
+  // Isi URL bisa apa saja (misalnya /event/abc). Periksa dulu sebelum bertanya ke database.
+  if (!Number.isInteger(id)) return null;
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error("Gagal memuat event: " + error.message);
+  return data as Event | null;
 }
 
-export async function ambilTerkait(
-  event: Event,
-  limit = 3
-): Promise<Event[]> {
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .eq("kategori", event.kategori)
-      .neq("id", event.id)
-      .limit(limit);
+export async function ambilTerkait(event: Event): Promise<Event[]> {
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("kategori", event.kategori)
+    .neq("id", event.id)
+    .order("tanggal");
+  if (error) throw new Error("Gagal memuat event terkait: " + error.message);
+  return data as Event[];
+}
 
-    if (!error && data && data.length > 0) {
-      return (data as Event[]).filter(
-        (item): item is Event => Boolean(item && item.id !== undefined)
-      );
-    }
-  } catch {
-    // fallback ke data lokal di bawah
-  }
-
-  const validLocal = localEvents.filter(
-    (item): item is Event => Boolean(item && item.id !== undefined)
-  );
-
-  const samaKategori = validLocal.filter(
-    (item) =>
-      String(item.id) !== String(event.id) &&
-      item.kategori === event.kategori
-  );
-
-  if (samaKategori.length > 0) {
-    return samaKategori.slice(0, limit);
-  }
-
-  return validLocal
-    .filter((item) => String(item.id) !== String(event.id))
-    .slice(0, limit);
+// Pesanan berisi nama dan email orang, jadi dibaca memakai kunci rahasia (hanya di server).
+export async function hitungPesanan(eventId: number): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from("pesanan")
+    .select("*", { count: "exact", head: true })
+    .eq("event_id", eventId);
+  if (error) throw new Error("Gagal menghitung pesanan: " + error.message);
+  return count ?? 0;
 }

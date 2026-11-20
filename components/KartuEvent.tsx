@@ -1,76 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { Event } from "@/data/events";
+import { toggleFavoritId, useFavoritIds } from "@/lib/favorit-strore";
 
 interface KartuEventProps {
   event: Event;
 }
 
-type StorageLike = {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-};
-
-function getStorage(): StorageLike | null {
-  const g = globalThis as typeof globalThis & { localStorage?: StorageLike };
-  return g.localStorage ?? null;
-}
-
 export default function KartuEvent({ event }: KartuEventProps) {
-  const [isFavorit, setIsFavorit] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const storage = getStorage();
-    if (!storage) return;
-
-    try {
-      const raw = storage.getItem("favorit_events");
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) {
-        setIsFavorit(parsed.includes(event.id));
-      }
-    } catch {
-      setIsFavorit(false);
-    }
-  }, [event.id]);
+  const favoritIds = useFavoritIds();
+  const aktif = favoritIds.includes(event.id);
 
   function toggleFavorit() {
-    const storage = getStorage();
-    if (!storage) {
-      setIsFavorit((prev) => !prev);
-      return;
-    }
-
-    try {
-      const raw = storage.getItem("favorit_events");
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      const list: number[] = Array.isArray(parsed)
-        ? parsed.filter((item): item is number => typeof item === "number")
-        : [];
-
-      const nextList = list.includes(event.id)
-        ? list.filter((id) => id !== event.id)
-        : [...list, event.id];
-
-      storage.setItem("favorit_events", JSON.stringify(nextList));
-      setIsFavorit(nextList.includes(event.id));
-    } catch {
-      setIsFavorit((prev) => !prev);
-    }
+    toggleFavoritId(event.id);
   }
-
-  const aktif = mounted && isFavorit;
 
   return (
     <div className="rounded-lg border p-4 shadow-sm">
       {event.gambar ? (
-        <img
+        <Image
           src={event.gambar}
           alt={event.judul}
+          width={600}
+          height={240}
+          unoptimized
           className="mb-3 h-40 w-full rounded object-cover"
         />
       ) : null}

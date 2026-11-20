@@ -1,6 +1,7 @@
 import Form from "next/form";
 import type { Saringan } from "@/data/saringan";
 
+
 export default function KontrolKatalog({ s, daftarKategori }: { s: Saringan; daftarKategori: string[] }) {
   return (
     <Form action="/event" className="mb-4 flex flex-wrap items-center gap-3">
