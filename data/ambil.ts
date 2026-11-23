@@ -4,9 +4,17 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { Event } from "@/data/events";
 
 export async function ambilEvents(): Promise<Event[]> {
-  const { data, error } = await supabase.from("events").select("*").order("tanggal");
-  if (error) throw new Error("Gagal memuat event: " + error.message);
-  return data as Event[];
+  try {
+    const { data, error } = await supabase.from("events").select("*").order("tanggal");
+    if (error) {
+      console.error("Gagal memuat event:", error.message);
+      return [];
+    }
+    return (data ?? []) as Event[];
+  } catch (err) {
+    console.error("Gagal memuat event (fetch failed):", err);
+    return [];
+  }
 }
 
 export async function ambilEvent(id: number): Promise<Event | null> {
